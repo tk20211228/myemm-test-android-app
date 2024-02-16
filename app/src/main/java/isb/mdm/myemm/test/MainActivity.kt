@@ -3,18 +3,32 @@ package isb.mdm.myemm.test
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.Settings
+import android.security.KeyChain
+import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     companion object {
         const val CAMERA_REQUEST_CODE = 101
         const val OTHER_PERMISSIONS_REQUEST_CODE = 102
@@ -25,10 +39,21 @@ class MainActivity : AppCompatActivity() {
         setupPermissions()
 
         // ボタンのクリックリスナーを設定
-        val buttonAppInfo = findViewById<Button>(R.id.button_app_info)
-        buttonAppInfo.setOnClickListener {
+        findViewById<Button>(R.id.button_app_info).setOnClickListener {
             // アプリの設定画面を開く
             openAppSettings()
+        }
+        findViewById<Button>(R.id.button_cert_install).setOnClickListener {
+            val inputPath = "https://www.dropbox.com/scl/fi/r21tl24jg3xp5vtto6npp/p12.p12?rlkey=5ka81ac25cfaqhxeip2f1bgz9&dl=1"
+//            val fileName = "downloaded_certificate.p12"
+//            val outputPath = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName).path
+//            downloadCertificate(inputPath, outputPath)
+            // 外部ストレージのダウンロードディレクトリを取得
+            val downloadsDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            // 一時ファイルを作成
+            val tempFile = File.createTempFile("downloaded_certificate", ".p12", downloadsDir)
+            // 一時ファイルのパスをダウンロード先として使用
+            downloadCertificate(inputPath, tempFile.absolutePath)
         }
     }
     private fun setupPermissions() {
@@ -139,5 +164,72 @@ class MainActivity : AppCompatActivity() {
         intent.data = uri
         startActivity(intent)
     }
+    private fun installCertificate(certificateBytes: ByteArray) {
+        val intent = KeyChain.createInstallIntent()
+        intent.putExtra(KeyChain.EXTRA_CERTIFICATE, certificateBytes)
+        intent.putExtra(KeyChain.EXTRA_NAME, "Certificate Name")
+        startActivity(intent)
+    }
+
+    private fun installCertificate(context: Context, certificateBytes: ByteArray, certificateName: String) {
+        try {
+            // 証明書をインストールするためのIntentを作成
+            val installIntent = KeyChain.createInstallIntent()
+            installIntent.putExtra(KeyChain.EXTRA_CERTIFICATE, certificateBytes)
+            installIntent.putExtra(KeyChain.EXTRA_NAME, certificateName)
+
+            // 証明書インストールのIntentを開始
+            Log.e("MainActivity", "証明書のインストール開始")
+            context.startActivity(installIntent)
+            Log.e("MainActivity", "証明書のインストール終了")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "証明書のインストールに失敗しました。", e)
+            // UIスレッドでToastを表示
+            runOnUiThread {
+                Toast.makeText(context, "証明書のインストールに失敗しました。", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    // 証明書をダウンロードしてインストールする処理
+    private fun downloadCertificate(urlString: String, outputPath: String) {
+        coroutineScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    // ダウンロード処理...
+                    val url = URL(urlString)
+                    val connection = url.openConnection()
+                    BufferedInputStream(connection.getInputStream()).use { input ->
+                        FileOutputStream(outputPath).use { output ->
+                            val dataBuffer = ByteArray(1024)
+                            var bytesRead: Int
+                            while (input.read(dataBuffer).also { bytesRead = it } != -1) {
+                                output.write(dataBuffer, 0, bytesRead)
+                            }
+                        }
+                    }
+                    // ダウンロードしたファイルを読み込み、バイト配列を取得
+                    val file = File(outputPath)
+                    val certificateBytes = file.readBytes()
+                    // ダウンロード成功後、証明書をインストール
+                    certificateBytes.let {
+                        withContext(Dispatchers.Main) {
+                            installCertificate(this@MainActivity, it, "downloaded_certificate")
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Log.e("MainActivity", "証明書のダウンロードに失敗しました。", e)
+                    Toast.makeText(this@MainActivity, "証明書のダウンロードに失敗しました。", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel() // アクティビティ破棄時にコルーチンをキャンセル
+    }
+
 
 }
