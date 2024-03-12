@@ -18,8 +18,8 @@
 
     <Button
         android:id="@+id/button_app_info"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="178dp"
+        android:layout_height="52dp"
         android:text="アプリ情報"
         app:layout_constraintBottom_toTopOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
@@ -28,10 +28,10 @@
         app:layout_constraintVertical_bias="0.168" />
 
     <Button
-        android:id="@+id/button_cert_install"
+        android:id="@+id/button_caCert_list"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="証明をインストール"
+        android:text="CA証明書リスト表示"
         app:layout_constraintBottom_toTopOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"
