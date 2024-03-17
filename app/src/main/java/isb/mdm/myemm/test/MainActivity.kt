@@ -1,17 +1,19 @@
 package isb.mdm.myemm.test
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, CertificateListActivity::class.java)
             startActivity(intent)
         }
+
     }
     private fun setupPermissions() {
         val permissionsRequired = getAllPermissions()

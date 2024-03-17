@@ -3,5 +3,10 @@
     <style name="Base.Theme.Myemmtest" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="buttonStyle">@style/CustomButton</item>
     </style>
 </resources>
